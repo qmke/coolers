@@ -1,0 +1,64 @@
+-- Configuration
+local config = {
+    Time = 0.045,
+    Size = 0.9
+}
+
+-- Services
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+
+-- Local player and GUI elements
+local Player = Players.LocalPlayer
+local Bar = Player.PlayerGui.Visual.Shooting.Bar
+
+-- Variables to manage tween and connection
+local activeTween = nil
+local connection = nil
+
+-- Function to reset the bar size
+local function resetBarSize()
+    Bar.Size = UDim2.new(1, 0, 1, 0)
+end
+
+-- Input began event
+UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.E and Player.Character and Player.Character:FindFirstChild("Basketball") then
+        if not activeTween then
+            -- Create a tween to animate the bar size
+            local tweenInfo = TweenInfo.new(config.Time, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+            activeTween = TweenService:Create(Bar, tweenInfo, {Size = UDim2.new(1, 0, 1, 0)})
+            activeTween:Play()
+
+            -- Setup a listener for the tween's completion
+            activeTween.Completed:Connect(function()
+                resetBarSize()
+                activeTween = nil
+            end)
+
+            -- Setup a listener for size change
+            connection = Bar:GetPropertyChangedSignal("Size"):Connect(function()
+                if Bar.Size.Y.Scale > config.Size then
+                    resetBarSize()
+                end
+            end)
+        end
+    end
+end)
+
+-- Input ended event
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.E then
+        if activeTween then
+            activeTween:Cancel()
+            resetBarSize()
+            activeTween = nil
+        end
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+    end
+end)
